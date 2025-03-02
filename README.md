@@ -1,3 +1,3 @@
 # public
 
-Welcome to my repository! This contains a curated selection of materials I have produced throughout my journey in the fields of psychometrics and data science.
+Welcome to my repository! This contains a curated selection of materials I have produced throughout my journey in analytics. All of these materials represent topics I find interesting--some practical, and others are just fun.
