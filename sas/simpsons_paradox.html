@@ -1,19 +1,19 @@
 <!doctype html>
 <html>
   <head>
-    <meta charset="utf-8" />
-    <title>Simpson's Paradox</title>
-    <!-- Load MathJax -->
+    <!-- Customization: MathJax -->
     <script>
-    window.MathJax = {
-      tex: {
-        inlineMath: [['$', '$'], ['\\(', '\\)']],   // for inline math
-        displayMath: [['$$', '$$'], ['\\[', '\\]']] // for block math
-      },
-      svg: { fontCache: 'global' }
-    };
+      window.MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],   // for inline math
+          displayMath: [['$$', '$$'], ['\\[', '\\]']] // for block math
+        },
+        svg: { fontCache: 'global' }
+      };
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <!-- End MathJax addition -->
+    <meta charset="utf-8" />
     <style>
       body {
         font-family: "Segoe UI", sans-serif;
@@ -170,6 +170,7 @@
     <div class="markdown-cell">
 <h1>Simpson&#39;s Paradox</h1>
 <p>Simpson&#39;s Paradox refers to a phenomenon in which a trend observed at an aggregate level actually reverses when the data are divided into relevant subgroups. When modeling <strong>nested</strong> data that organizes individual data elements into one or more levels of a hierarchy (e.g., employees nested within teams, which are nested within departments, which are nested within divisions, and so on), it is critical to remain mindful of the potential impact that &quot;nestedness&quot; may have on any conclusions that may be drawn from the data. Ignoring hierarchies in the data may not simply result in less optimal model fit; resulting conclusions may be fundamentally wrong!</p>
+<p><strong>Display Note:</strong> the HTML export of this SAS Notebook uses <a href="https://www.mathjax.org/">MathJax</a> to render LaTeX equations.</p>
 
 </div>
 <div class="markdown-cell">
@@ -4037,7 +4038,9 @@ y_i = \beta_0 + \beta_1 x_i + e_i
 $$</p>
 <p>Using the coefficients estimated from this model, we calculate the prediction formula as follows.</p>
 <p>$$
-\hat{y} = \beta_0 + \beta_1 x\
+\hat{y} = \beta_0 + \beta_1 x
+$$</p>
+<p>$$
 \hat{y} = 5.363 + 0.228 x
 $$</p>
 <p>The estimated intercept ($\hat{\beta}_0 = 5.363$) and slope ($\hat{\beta}_1 = 0.228$) are both <strong>fixed effects</strong> in this model, meaning they do not vary for any observations in our data set. Our interpretation of this model&#39;s slope leads us to conclude that a 1-unit increase in <code>x</code> corresponds to a 0.228 unit <strong>increase</strong> in the predicted value of <code>y</code>.</p>
@@ -5364,28 +5367,39 @@ a:visited { color: #626f80 }
 <div class="markdown-cell">
 <p>For individual data observation $i$ within <code>group</code> level $j$, we can express the prediction in the following two-level model.</p>
 <h2>Level 1 Equation</h2>
-<p>$$y_{ij} = \beta_{0j} + \beta_{1j} x_{ij} + e_{ij}$$</p>
+<p>$$
+y_{ij} = \beta_{0j} + \beta_{1j} x_{ij} + e_{ij}
+$$</p>
 <h2>Level 2 Equation</h2>
 <p>Because we are allowing intercepts to vary across levels of <code>group</code>, but we are keeping slopes fixed, we write the level 2 model as follows. Notice how the intercept ($\beta_{0j}$) has an additional term because it is a random effect in this model.</p>
 <p>$$
 \beta_{0j} = \gamma_{00} + u_{0j}
-$$
-</p>
+$$</p>
 <p>$$
 \beta_{1j} = \gamma_{10}
 $$</p>
 <h2>Reduced-Form Equation</h2>
 <p>The reduced-form equation can be written as follows. I have reordered the equation to list all of the fixed components first, followed by the random components.</p>
-<p>$$y_{ij} = \gamma_{00} + \gamma_{10} x_{ij} + u_{0j} + e_{ij}$$</p>
+<p>$$
+y_{ij} = \gamma_{00} + \gamma_{10} x_{ij} + u_{0j} + e_{ij}
+$$</p>
 <h2>Residual Intraclass Correlation</h2>
 <p>In this model, we have partitioned our variance into two components: between groups and within groups. Variance at level 1 (within groups) is distributed as follows.</p>
-<p>$$e_{ij} \sim N(0, \sigma^{2}_{e}).$$</p>
+<p>$$
+e_{ij} \sim N(0, \sigma^{2}_{e}).
+$$</p>
 <p>Variance at level 2 (between groups) is distributed as follows.</p>
-<p>$$u_{0j} \sim N(0, \tau_{00}).$$</p>
+<p>$$
+u_{0j} \sim N(0, \tau_{00}).
+$$</p>
 <p>Using the values found in the <strong>Covariance Parameter Estimates</strong> table above, we can calculate the residual intraclass correlation (ICC) as:</p>
-<p>$$ICC = {{\hat{\tau}_{00}} \over {\hat{\tau}_{00} + \hat{\sigma}^{2}_{e}}},$$</p>
+<p>$$
+ICC = {{\hat{\tau}_{00}} \over {\hat{\tau}_{00} + \hat{\sigma}^{2}_{e}}},
+$$</p>
 <p>which is:</p>
-<p>$$ICC = {{3492.98} \over {3492.98 + 9.37}} = 0.997.$$</p>
+<p>$$
+ICC = {{3492.98} \over {3492.98 + 9.37}} = 0.997.
+$$</p>
 <p>Here, the residual ICC tells us that the proportion of total residual variability in <code>y</code> (controlling for predictors) that is between groups in this example data set is 0.997.</p>
 <h2>Revisiting the Slope</h2>
 <p>Recall that the estimated slope from the simple OLS regression model that ignored groups was estimated as 0.228, indicating a positive relationship between <code>x</code> and <code>y</code>. Looking at the <strong>Solution for Fixed Effects</strong> table in the multilevel model output, we see that the slope is estimated to be -0.260 when we allow intercepts to vary across levels of <code>group</code>, which tells us that the relationship between <code>x</code> and <code>y</code> is negative when we allow intercepts to vary across levels of <code>group</code>. </p>
