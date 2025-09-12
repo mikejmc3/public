@@ -82,7 +82,7 @@ There is our explanation for the apparent rounding issue for 1.15. When we multi
 
 ## Attempt 2
 
-Let's add a bit of "fudge factor" into the a new rounding function and see if that improves things.
+Let's add a bit of "fudge factor" into a new rounding function and see if that improves things.
 
 ```{r}
 round_up_fix <- function (x, digits=0) {
@@ -109,3 +109,4 @@ round_up_fix(-1.15, 1)
 # Conclusion
 
 Once again, I have demonstrated that rounding is not a simple as it seems. If we stick within R's preferred "round to nearest even" framework, the `signif` function appears to work well. Attempts to build a do-it-yourself solution to match a SAS-like "always round ties up" rule surfaces some unexpected numerical precision pitfalls.
+
