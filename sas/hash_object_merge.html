@@ -2924,9 +2924,22 @@ a:visited { color: #626f80 }
 </tr>
 </tbody></table>
 <p>This duplication of rows in <code>X</code> may be unexpected unless this user was diligent about confirming the uniqueness of <code>ID</code> in both tables prior to attempting this merge. In spite of the fact that many-to-many merges like this may lead to unexpected row duplication, SAS does not provide a warning or error message to alert the user. Instead, the following easily overlooked message is written to the log among the other normal <code>DATA</code> step log notes.</p>
-<blockquote>
-<p>NOTE: MERGE statement has more than one data set with repeats of BY values.</p>
-</blockquote>
+<p><code style="color: black; background: none; padding: 0;"><pre></p>
+<p>131  data work.merge_ds_dup_1;
+132      merge
+133          work.dup_1_s
+134          work.dup_2_s
+135      ;
+136      by id;
+137  run;</code><code style="color: blue; background: none;">
+NOTE: MERGE statement has more than one data set with repeats of BY values.
+NOTE: There were 6 observations read from the data set WORK.DUP_1_S.
+NOTE: There were 7 observations read from the data set WORK.DUP_2_S.
+NOTE: The data set WORK.MERGE_DS_DUP_1 has 8 observations and 3 variables.
+NOTE: DATA statement used (Total process time):
+      real time           0.00 seconds
+      cpu time            0.00 seconds
+</pre></code></p>
 
 </div>
 <div class="markdown-cell">
@@ -6755,17 +6768,14 @@ a:visited { color: #626f80 }
 
 <div class="markdown-cell">
 <p>Processing stops, and the log produces the following error and warning messages that alert the user that the merge key, <code>ID</code>, has duplicate values.</p>
-<blockquote>
-<p>ERROR: Duplicate key found when loading data set work.dup_2 at line 323 column 9.<br>
-NOTE: There were 3 observations read from the data set WORK.DUP_2.<br>
-ERROR: Hash data set load failed at line 323 column 9.<br>
-ERROR: DATA STEP Component Object failure. Aborted during the EXECUTION phase.<br>
-NOTE: The SAS System stopped processing this step because of errors.<br>
-NOTE: Due to ERROR(s) above, SAS set option OBS=0, enabling syntax check mode.<br>
-This prevents execution of subsequent data modification statements.<br>
-WARNING: The data set WORK.MERGE_HASH_DUP_1 may be incomplete.<br>
-When this step was stopped there were 0 observations and 3 variables.<br></p>
-</blockquote>
+<p><code style="color: red; background: none; padding: 0;"><pre></p>
+<p>ERROR: Duplicate key found when loading data set work.dup_2 at line 323 column 9.</code><code style="color: blue; background: none;">
+NOTE: There were 3 observations read from the data set WORK.DUP_2.</code><code style="color: red; background: none;">
+ERROR: Hash data set load failed at line 323 column 9.
+ERROR: DATA STEP Component Object failure. Aborted during the EXECUTION phase.</code><code style="color: blue; background: none;">
+NOTE: The SAS System stopped processing this step because of errors.
+NOTE: Due to ERROR(s) above, SAS set option OBS=0, enabling syntax check mode. This prevents execution of subsequent data modification statements.</code><code style="color: green; background: none;">
+WARNING: The data set WORK.MERGE_HASH_DUP_1 may be incomplete. When this step was stopped there were 0 observations and 3 variables.</pre></code></p>
 
 </div>
 <div class="markdown-cell">
