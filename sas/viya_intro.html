@@ -1,0 +1,2987 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+      }
+      .markdown-cell table td,
+      .markdown-cell table th {
+        border: 1px solid var(--border-color);
+      }
+      .markdown-cell code {
+        padding: 0 .4em;
+        border-radius: 4px;
+        background-color: var(--highlight-background-color);
+      }
+      .code-cell {
+        position: relative;
+        font-size: 14px;
+      }
+      .code-cell pre code {
+        font-family: Consolas, monospace;
+      }
+      pre code.hljs {
+        display: block;
+        overflow-x: auto;
+        padding: 1em;
+        border: 1px solid var(--border-color);
+      }
+      .code-cell .languageId {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        text-transform: uppercase;
+        padding: .1em .5em;
+        background-color: var(--highlight-background-color);
+      }
+      .log-line {
+        font-family: Consolas, monospace;
+        font-size: 14px;
+        white-space: pre-wrap;
+        margin-inline-start: 1em;
+      }
+      body {
+  color: #3b3b3b;
+  --border-color: #b0b7bb;
+  --highlight-background-color: #818b981f;
+}
+.hljs {
+  background: #fff;
+}
+
+/* Syntax highlighting */
+.hljs-operator,
+.hljs-punctuation {
+  color: #1b1d22;
+}
+
+.hljs-keyword {
+  color: #3578c5;
+}
+
+.hljs-comment {
+  color: #647f29;
+}
+
+.hljs-string {
+  color: #8f4238;
+}
+
+.hljs-number {
+  color: #3c8275;
+}
+
+.hljs-title {
+  color: #224c7c;
+  font-weight: bold;
+}
+
+.hljs-built_in {
+  color: #aa0d91;
+}
+
+/* SAS Syntax */
+.sas-syntax-sep {
+  color: #1b1d22;
+}
+
+.sas-syntax-keyword,
+.sas-syntax-macro-keyword {
+  color: #3578c5;
+}
+
+.sas-syntax-sec-keyword,
+.sas-syntax-proc-name {
+  color: #224c7c;
+  font-weight: bold;
+}
+
+.sas-syntax-comment,
+.sas-syntax-macro-comment {
+  color: #647f29;
+}
+
+.sas-syntax-macro-ref,
+.sas-syntax-macro-sec-keyword {
+  color: #1b1d22;
+  font-weight: bold;
+}
+
+.sas-syntax-cards-data {
+  color: #ad6531;
+}
+
+.sas-syntax-string {
+  color: #8f4238;
+}
+
+.sas-syntax-date,
+.sas-syntax-time,
+.sas-syntax-dt,
+.sas-syntax-bitmask {
+  color: #3c8275;
+  font-weight: bold;
+}
+
+.sas-syntax-namelit {
+  color: #8f4238;
+  font-weight: bold;
+}
+
+.sas-syntax-hex,
+.sas-syntax-numeric {
+  color: #3c8275;
+  font-weight: bold;
+}
+
+.sas-syntax-format {
+  color: #3c8275;
+}
+
+.log-line.sas-log-error {
+  color: #ff0000;
+}
+
+.log-line.sas-log-warning {
+  color: #8f5f00;
+}
+
+.log-line.sas-log-note {
+  color: #0000ff;
+}
+
+    </style>
+  </head>
+  <body>
+    <div class="markdown-cell">
+<h1>A Basic Introduction to Cloud Analytic Services on SAS Viya</h1>
+<p>Approaching <a href="https://www.sas.com/en_us/software/viya.html">SAS Viya</a> as an experienced SAS 9 programmer presented me with a few changes that caused some initial confusion. Not only did I have to learn a few new habits, but I had to unlearn a couple as well. Fortunately, after a brief adjustment period I was able to get up to speed and start taking advantage of what SAS Viya has to offer.</p>
+<p>This notebook contains some examples of key concepts that may benefit SAS 9 programmers with little or no prior experience with SAS Viya. This is by no means a comprehensive guide, but rather a gentle introduction with some attention paid to areas I found to be particularly mystifying when I was first familiarizing myself with the platform.</p>
+
+</div>
+<div class="markdown-cell">
+<h1>Connecting to CAS</h1>
+<p>The <code>CAS</code> statement initiates a <strong>Cloud Analytic Services (CAS)</strong> session. I sometimes think of SAS Viya as having two &quot;brains.&quot; There is the legacy &quot;V9 brain,&quot; which is what you use when you work with legacy *.sas7bdat data sets in V9-engine SAS libraries (e.g., <code>WORK</code>), and the &quot;CAS brain&quot; is what you use to work with modern in-memory data tables loaded into CASLIBs.</p>
+<p>In SAS 9, you start a new SAS session immediately when you launch SAS (in the case of SAS Display Manager) or when you first submit code and connect to the SAS compute server (in the case of SAS Enterprise Guide).</p>
+<p>In SAS Viya, your SAS session begins when you launch SAS Studio, but you have to submit <code>CAS</code> statement code to connect to a CAS server and start your CAS session. Depending on how your SAS Viya environment is configured, you may have several available CAS servers for use. It is possible to have multiple CAS sessions running concurrently and in use by the same program. In this notebook, we will use a single session.</p>
+<p>Minimally, the <code>CAS</code> statement contains the following:</p>
+<ol>
+<li><code>CAS</code> statement keyword,</li>
+<li>A unique name for your CAS session,</li>
+<li>Correct host name (obtain from your SAS Viya system administrator).</li>
+</ol>
+<p><code>cas mycas host=&quot;my-viya-server-name&quot;;</code></p>
+<p>Other options are available, as shown below. For security reasons, I will not include my SAS Viya environment&#39;s host name in the committed code for this notebook.</p>
+
+</div>
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-comment">* Start a CAS session named CASMAIN;</span>
+<span class="sas-syntax-keyword">cas</span> casmain
+    <span class="sas-syntax-keyword">host</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"/* Provide your host name here */"</span>
+    <span class="sas-syntax-keyword">port</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-numeric">5570</span>
+    <span class="sas-syntax-keyword">sessopts</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-sep">(</span>
+        <span class="sas-syntax-keyword">timeout</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-numeric">1800</span>
+        <span class="sas-syntax-keyword">locale</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"en_US"</span>
+        <span class="sas-syntax-keyword">metrics</span><span class="sas-syntax-sep">=</span>false  <span class="sas-syntax-comment">/* Set to TRUE for more details in the log */</span>
+    <span class="sas-syntax-sep">)</span>
+<span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+<div class="markdown-cell">
+<h1>Libraries</h1>
+<p>SAS Viya users are able to work with CAS data sources using traditional SAS programming techniques (<code>DATA</code> and most <code>PROC</code> steps). In order to use these to work with CAS data, you must use a <code>LIBNAME</code> statement to associate a LIBREF with the CASLIB that contains your CAS data.</p>
+<p>Experienced SAS programmers will be familiar with the concept of LIBNAME <strong>engines</strong>. Just like we use the V9 engine to work with SAS 9 data sets and the XLSX engine to work with Microsoft Excel files, we use the <strong>CAS engine</strong> to work with CAS data. The <code>LIBNAME</code> statement for CAS data takes the following form.</p>
+<p><code>libname mylib cas caslib=&quot;caslib-name&quot; sessref=cas-session-name;</code></p>
+<p>Breaking the above statement down, we see that it contains the following:</p>
+<ol>
+<li><code>LIBNAME</code> statement keyword,</li>
+<li>A unique LIBNAME (standard LIBNAME rules apply!) for this SAS library,</li>
+<li><code>CAS</code> keyword indicating this LIBNAME uses the CAS engine,</li>
+<li>The name of the associated CASLIB (enclose in quotes as shown above if the CASLIB name contains spaces), and</li>
+<li>The name of the CAS session that corresponds to the target CASLIB.</li>
+</ol>
+<p>Note that the <code>SESSREF=</code> argument is not strictly required, but I strongly encourage users to always specify it. The user has the option to have several active CAS sessions running concurrently, so being explicit about which LIBNAME corresponds to which CAS session can save the programmer some headaches. If the scope of the program expands over time to include multiple CAS sessions, including this option prevents previously-working code from blowing up when LIBNAME references become ambiguous, so I find it is best to always define the CAS session.</p>
+<p>Let&#39;s set up a LIBNAME connected to the <code>CASUSER</code> CASLIB. For simplicity, we will call our new LIBNAME <code>CASUSER</code>, but we could just as easily name this something else if we wanted to.</p>
+
+</div>
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-keyword">libname</span> casuser <span class="sas-syntax-keyword">cas</span> <span class="sas-syntax-keyword">caslib</span><span class="sas-syntax-sep">=</span>casuser <span class="sas-syntax-keyword">sessref</span><span class="sas-syntax-sep">=</span>casmain<span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+
+<div class="markdown-cell">
+<h1>How Do I Know Which CASLIBs Are Available?</h1>
+<p>You may be thinking, <em>but how did you know there was a CASLIB called CASUSER to connect to?</em> </p>
+<p>To answer this question, one option is to go to SAS Data Explorer in your SAS Viya environment, expand the server that you wish to use, and you will see a list of CASLIBs. </p>
+<p>If you prefer to go the code route, you can submit code like this to see a list of CASLIBs in the log.</p>
+<p><code>caslib _all_ list sessref=cas-session-name;</code></p>
+<p>Note: You may not have read access to every CASLIB that you see, depending on your environment&#39;s security configuration.</p>
+
+</div>
+<div class="markdown-cell">
+<h1>Using the <code>DATA</code> Step to Read and Write Tables</h1>
+<p>Let&#39;s grab some data stored in a V9 SAS library and copy it over to CAS. We will use the trusty <code>SASHELP.CARS</code> table in these examples. Note that in SAS Viya, data tables in <code>SASHELP</code> use the legacy V9 engine.</p>
+
+</div>
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-comment">* Copy a table from V9 to CAS;</span>
+<span class="sas-syntax-sec-keyword">data</span> casuser.cars<span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">set</span> sashelp.cars<span class="sas-syntax-sep">;</span>
+<span class="sas-syntax-sec-keyword">run</span><span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+
+<div class="markdown-cell">
+<p>The above step read the <code>CARS</code> table from <code>SASHELP</code> and wrote it to <code>CASUSER</code> on CAS. Here, we can do the typical operations on our data table using traditional SAS code, even though our data table is in CAS.</p>
+
+</div>
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-comment">* Create a new CAS table from another CAS table;</span>
+<span class="sas-syntax-sec-keyword">data</span> casuser.cars_altered<span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">set</span> casuser.cars<span class="sas-syntax-sep">;</span>
+    mpg_city_sq <span class="sas-syntax-sep">=</span> mpg_city <span class="sas-syntax-sep">*</span><span class="sas-syntax-sep">*</span> <span class="sas-syntax-numeric">2</span><span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">length</span> type_up <span class="sas-syntax-sep">$</span> <span class="sas-syntax-numeric">8</span><span class="sas-syntax-sep">;</span>
+    type_up <span class="sas-syntax-sep">=</span> <span class="sas-syntax-keyword">upcase</span><span class="sas-syntax-sep">(</span>type<span class="sas-syntax-sep">)</span><span class="sas-syntax-sep">;</span>
+<span class="sas-syntax-sec-keyword">run</span><span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+
+<div class="markdown-cell">
+<p>Using the <code>DATA</code> step, we can easily move our data from CAS to the legacy V9 engine <code>WORK</code> library, too.</p>
+
+</div>
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-sec-keyword">data</span> work.cars<span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">set</span> casuser.cars<span class="sas-syntax-sep">;</span>
+<span class="sas-syntax-sec-keyword">run</span><span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+
+<div class="markdown-cell">
+<h1>Using <code>PROC CASUTIL</code> to Read and Write CAS Tables</h1>
+<p>The <code>CASUTIL</code> procedure is a very helpful tool for managing CAS data. Somewhat similar to <code>PROC DATASETS</code>, it is a bit of &quot;Swiss Army Knife&quot; among CAS tools, and I find it useful for a variety of use cases--mostly for deleting, copying, loading, saving, and/or promoting data (see further below for more on these concepts).</p>
+<p>Let&#39;s use <code>PROC CASUTIL</code> to load <code>SASHELP.CARS</code> into the <code>CASUSER</code> CASLIB. Name the new table <code>CARS_CU</code>.</p>
+
+</div>
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-comment">* Copy SASHELP.CARS to the CASUSER CASLIB, and name that new table CARS_CU;</span>
+<span class="sas-syntax-sec-keyword">proc</span> <span class="sas-syntax-proc-name">casutil</span> <span class="sas-syntax-keyword">sessref</span><span class="sas-syntax-sep">=</span>casmain<span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">load</span>  <span class="sas-syntax-comment">/* Load table into memory - see further below for more details */</span>
+        <span class="sas-syntax-keyword">data</span><span class="sas-syntax-sep">=</span>sashelp.cars  <span class="sas-syntax-comment">/* Input V9 LIBNAME and table name */</span>
+        <span class="sas-syntax-keyword">outcaslib</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span>  <span class="sas-syntax-comment">/* Output CASLIB. Note: use the CASLIB and *NOT* the LIBNAME. In this case, they share the same name */</span>
+        <span class="sas-syntax-keyword">casout</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_cu"</span>  <span class="sas-syntax-comment">/* Output CAS table name */</span>
+    <span class="sas-syntax-sep">;</span>
+<span class="sas-syntax-sec-keyword">quit</span><span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+
+<div class="markdown-cell">
+<p>We can use <code>PROC CASUTIL</code> to read and write in-memory tables as well. Let&#39;s create a new copy of the <code>CARS_CU</code> table and name the new copy <code>CARS_CU2</code>. Both will live in the <code>CASUSER</code> CASLIB.</p>
+
+</div>
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-sec-keyword">proc</span> <span class="sas-syntax-proc-name">casutil</span> <span class="sas-syntax-keyword">sessref</span><span class="sas-syntax-sep">=</span>casmain<span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">copy</span>  <span class="sas-syntax-comment">/* Use the COPY statement to copy in-memory tables */</span>
+        <span class="sas-syntax-keyword">incaslib</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span>
+        <span class="sas-syntax-keyword">casdata</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_cu"</span>
+        <span class="sas-syntax-keyword">outcaslib</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span>
+        <span class="sas-syntax-keyword">casout</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_cu2"</span>
+    <span class="sas-syntax-sep">;</span>
+<span class="sas-syntax-sec-keyword">quit</span><span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+
+<div class="markdown-cell">
+<p>Note that, by default, <code>PROC CASUTIL</code> will not let you overwrite an existing CAS table. Let&#39;s re-run this code and try to overwrite <code>CARS_CU2</code>.</p>
+
+</div>
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-comment">* This will cause an error because CARS_CU2 already exists;</span>
+<span class="sas-syntax-sec-keyword">proc</span> <span class="sas-syntax-proc-name">casutil</span> <span class="sas-syntax-keyword">sessref</span><span class="sas-syntax-sep">=</span>casmain<span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">copy</span>
+        <span class="sas-syntax-keyword">incaslib</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span>
+        <span class="sas-syntax-keyword">casdata</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_cu"</span>
+        <span class="sas-syntax-keyword">outcaslib</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span>
+        <span class="sas-syntax-keyword">casout</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_cu2"</span>
+    <span class="sas-syntax-sep">;</span>
+<span class="sas-syntax-sec-keyword">quit</span><span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+
+<div class="markdown-cell">
+<p>This action is refused, and the user sees the following message in the log.</p>
+<p><code style="color: red; background: none; padding: 0;"><pre></p>
+<p>ERROR: The table cars_cu2 already exists in the session.
+ERROR: The action stopped due to errors.</code><code style="color: blue; background: none;">
+NOTE: The Cloud Analytic Services server processed the request in 0.014585 seconds.</code><code style="color: red; background: none; padding: 0;">
+ERROR: The copying of table "cars_cu2" in the "casuser" caslib failed.</pre></code></p>
+
+</div>
+<div class="markdown-cell">
+<p>We can get around this by adding the <code>REPLACE</code> option. This works only for <strong>local</strong> or <strong>session</strong> scope tables. See further below for more information on table <strong>scope</strong>.</p>
+
+</div>
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-comment">* This will work now;</span>
+<span class="sas-syntax-sec-keyword">proc</span> <span class="sas-syntax-proc-name">casutil</span> <span class="sas-syntax-keyword">sessref</span><span class="sas-syntax-sep">=</span>casmain<span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">copy</span>
+        <span class="sas-syntax-keyword">incaslib</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span>
+        <span class="sas-syntax-keyword">casdata</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_cu"</span>
+        <span class="sas-syntax-keyword">outcaslib</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span>
+        <span class="sas-syntax-keyword">casout</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_cu2"</span>
+        <span class="sas-syntax-keyword">replace</span>  <span class="sas-syntax-comment">/* Replace table if it already exists */</span>
+    <span class="sas-syntax-sep">;</span>
+<span class="sas-syntax-sec-keyword">quit</span><span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+
+<div class="markdown-cell">
+<p>Note that by contrast, the <code>DATA</code> step does not require any special option to overwrite an existing in-memory table.</p>
+
+</div>
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-comment">* Use DATA step to overwrite CAS table;</span>
+<span class="sas-syntax-sec-keyword">data</span> casuser.cars_cu2<span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">set</span> casuser.cars_cu<span class="sas-syntax-sep">;</span>
+<span class="sas-syntax-sec-keyword">run</span><span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+
+<div class="markdown-cell">
+<h1>Using <code>PROC CAS</code> to Read and Write CAS Tables</h1>
+<p>To me, <code>PROC CASUTIL</code> feels rather similar to other &quot;traditional&quot; SAS code, with the main difference being splitting out CASLIBs and table names into separate arguments as opposed to using the familiar LIBNAME.TABLE format generally used elsewhere in SAS programming.</p>
+<p><code>PROC CAS</code>, on the other hand, feels more like a new language unto its own. I do not make heavy use of <code>PROC CAS</code> in my day-to-day work. It provides a level of depth that other, more high-level procedures cannot always match, though. Most of the time, I rely on simpler options like the <code>DATA</code> step or <code>PROC CASUTIL</code>, and I resort to <code>PROC CAS</code> for more advanced use cases.</p>
+<p>Below, you will see an example of using <code>PROC CAS</code> to make a copy of a CAS table.</p>
+<p>A note on <code>PROC CAS</code> syntax: under this procedure, specific tasks are performed by <strong>actions</strong>, which are grouped within <strong>action sets</strong>. These are typically called in the following way:</p>
+<pre><code>proc cas;
+    actionSet.action / parameter={argument1=&quot;value&quot;, argument2=&quot;value&quot;, ...};
+quit;
+</code></pre>
+<p>Parameter arguments are grouped within curly braces and specific arguments for the parameter appear somewhat similar to comma-separated lists matching arguments to values. Most provided values are enclosed in quotes, with some exceptions.</p>
+<p>In the following example, we will use the <code>copyTable</code> action within the <code>table</code> action set to make a copy of the <code>CARS_CU</code> table we previously created using <code>PROC CASUTIL</code>, and we will name the new table <code>CARS_PC</code>. We will include a <code>REPLACE</code> option to allow an overwrite if the table already exists.</p>
+
+</div>
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-sec-keyword">proc</span> <span class="sas-syntax-proc-name">cas</span><span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">session</span> casmain<span class="sas-syntax-sep">;</span>  <span class="sas-syntax-comment">/* Notice that we use SESSION here instead of SESSREF, no equals, no quotes */</span>
+
+    table.copyTable <span class="sas-syntax-sep">/</span>
+        table<span class="sas-syntax-sep">=</span><span class="sas-syntax-sep">{</span>  <span class="sas-syntax-comment">/* Input arguments */</span>
+            caslib<span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span><span class="sas-syntax-sep">,</span>  <span class="sas-syntax-comment">/* Input CASLIB */</span>
+            name<span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_cu"</span>  <span class="sas-syntax-comment">/* Input table name */</span>
+        <span class="sas-syntax-sep">}</span><span class="sas-syntax-sep">,</span>
+
+        casout<span class="sas-syntax-sep">=</span><span class="sas-syntax-sep">{</span>  <span class="sas-syntax-comment">/* Output arguments */</span>
+            caslib<span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span><span class="sas-syntax-sep">,</span>  <span class="sas-syntax-comment">/* Output CASLIB */</span>
+            name<span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_pc"</span><span class="sas-syntax-sep">,</span>  <span class="sas-syntax-comment">/* Output table name */</span>
+            replace<span class="sas-syntax-sep">=</span>TRUE  <span class="sas-syntax-comment">/* Notice no quotes around Boolean TRUE this time */</span>
+        <span class="sas-syntax-sep">}</span>
+    <span class="sas-syntax-sep">;</span>
+<span class="sas-syntax-sec-keyword">quit</span><span class="sas-syntax-sep">;</span>    </code></pre>
+<div class="languageId">sas</div>
+</div>
+
+<div class="markdown-cell">
+<h1>The Key Benefit of CAS: Speed</h1>
+<p>CAS data tables are stored in memory and distributed among several worker nodes. Specific details, including the number of available worker nodes, are unique to a given environment&#39;s configuration.</p>
+<p>Distributed, in-memory data are ideal for <strong>parallel operations</strong>, which can greatly improve execution time when dealing with large data tables.</p>
+<p>Conversely, legacy V9 *.sas7bdat data tables are saved to disk and accessed sequentially (one row at a time), which generally translates to slower execution time when working with large data tables.</p>
+<p>Let&#39;s use a loop to expand the CARS table (N = 428) to have just over 10 million rows and do an informal performance comparison between CAS and V9.</p>
+<h2>CAS Data</h2>
+
+</div>
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-comment">* Stack data;</span>
+<span class="sas-syntax-sec-keyword">data</span> casuser.big_cars<span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">set</span> casuser.cars<span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">do</span> i <span class="sas-syntax-sep">=</span> <span class="sas-syntax-numeric">1</span> <span class="sas-syntax-keyword">to</span> <span class="sas-syntax-numeric">23365</span><span class="sas-syntax-sep">;</span>
+        <span class="sas-syntax-keyword">output</span><span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">end</span><span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">drop</span> i<span class="sas-syntax-sep">;</span>
+<span class="sas-syntax-sec-keyword">run</span><span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-comment">* Use CAS-enabled FREQTAB procedure;</span>
+<span class="sas-syntax-sec-keyword">proc</span> <span class="sas-syntax-proc-name">freqtab</span> <span class="sas-syntax-keyword">data</span><span class="sas-syntax-sep">=</span>casuser.big_cars<span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">tables</span> type<span class="sas-syntax-sep">;</span>
+<span class="sas-syntax-sec-keyword">run</span><span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+<div class="cell-output">
+<style>
+/*<![CDATA[*/
+.body.c > table, .body.c > pre, .body.c div > table,
+.body.c div > pre, .body.c > table, .body.c > pre,
+.body.j > table, .body.j > pre, .body.j div > table,
+.body.j div > pre, .body.j > table, .body.j > pre,
+.body.c p.note, .body.c p.warning, .body.c p.error, .body.c p.fatal,
+.body.j p.note, .body.j p.warning, .body.j p.error, .body.j p.fatal,
+.body.c > table.layoutcontainer, .body.j > table.layoutcontainer { margin-left: auto; margin-right: auto }
+.layoutregion.l table, .layoutregion.l pre, .layoutregion.l p.note,
+.layoutregion.l p.warning, .layoutregion.l p.error, .layoutregion.l p.fatal { margin-left: 0 }
+.layoutregion.c table, .layoutregion.c pre, .layoutregion.c p.note,
+.layoutregion.c p.warning, .layoutregion.c p.error, .layoutregion.c p.fatal { margin-left: auto; margin-right: auto }
+.layoutregion.r table, .layoutregion.r pre, .layoutregion.r p.note,
+.layoutregion.r table, .layoutregion.r pre, .layoutregion.r p.note,
+.layoutregion.r p.warning, .layoutregion.r p.error, .layoutregion.r p.fatal { margin-right: 0 }
+article, aside, details, figcaption, figure, footer, header, hgroup, nav, section { display: block }
+html{ font-size: 100% }
+.body { margin: 1em; font-size: 13px; line-height: 1.231 }
+sup { position: relative; vertical-align: baseline; bottom: 0.25em; font-size: 0.8em }
+sub { position: relative; vertical-align: baseline; top: 0.25em; font-size: 0.8em }
+ul, ol { margin: 1em 0; padding: 0 0 0 40px }
+dd { margin: 0 0 0 40px }
+nav ul, nav ol { list-style: none; list-style-image: none; margin: 0; padding: 0 }
+img { border: 0; vertical-align: middle }
+svg:not(:root) { overflow: hidden }
+figure { margin: 0 }
+table { border-collapse: collapse; border-spacing: 0 }
+.layoutcontainer { border-collapse: separate; border-spacing: 0 }
+p { margin-top: 0; text-align: left }
+h1.heading1 { text-align: left }
+h2.heading2 { text-align: left }
+h3.heading3 { text-align: left }
+h4.heading4 { text-align: left }
+h5.heading5 { text-align: left }
+h6.heading6 { text-align: left }
+span { text-align: left }
+table { margin-bottom: 1em }
+td, th { text-align: left; padding: 3px 6px; vertical-align: top }
+td[class$="fixed"], th[class$="fixed"] { white-space: pre }
+section, article { padding-top: 1px; padding-bottom: 8px }
+hr.pagebreak { height: 0px; border: 0; border-bottom: 1px solid #c0c0c0; margin: 1em 0 }
+.stacked-value { text-align: left; display: block }
+.stacked-cell > .stacked-value, td.data > td.data, th.data > td.data, th.data > th.data, td.data > th.data, th.header > th.header { border: 0 }
+.stacked-cell > div.data { border-width: 0 }
+.systitleandfootercontainer { white-space: nowrap; margin-bottom: 1em }
+.systitleandfootercontainer > p { margin: 0 }
+.systitleandfootercontainer > p > span { display: inline-block; width: 100%; white-space: normal }
+.batch { display: table }
+.toc { display: none }
+.proc_note_group, .proc_title_group { margin-bottom: 1em }
+p.proctitle { margin: 0 }
+p.note, p.warning, p.error, p.fatal { display: table }
+.notebanner, .warnbanner, .errorbanner, .fatalbanner,
+.notecontent, .warncontent, .errorcontent, .fatalcontent { display: table-cell; padding: 0.5em }
+.notebanner, .warnbanner, .errorbanner, .fatalbanner { padding-right: 0 }
+.body > div > ol li { text-align: left }
+.beforecaption > h4 { margin-top: 0; margin-bottom: 0 }
+.c { text-align: center }
+.r { text-align: right }
+.l { text-align: left }
+.j { text-align: justify }
+.d { text-align: right }
+.b { vertical-align: bottom }
+.m { vertical-align: middle }
+.t { vertical-align: top }
+.accessiblecaption {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 11pt;
+    font-style: normal;
+    font-weight: bold;
+}
+a:active { color: #626f80 }
+.aftercaption {
+    background-color: #ffffff;
+    border-spacing: 0;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+    padding-top: 4pt;
+}
+.batch > colgroup {
+    border-left: 1px solid #696969;
+    border-right: 1px solid #696969;
+}
+.batch > tbody, .batch > thead, .batch > tfoot {
+    border-top: 1px solid #696969;
+    border-bottom: 1px solid #696969;
+}
+.batch { border: hidden; }
+.batch {
+    background-color: #ffffff;
+    border: 1px solid #696969;
+    border-collapse: separate;
+    border-spacing: 1px;
+    color: #2a3037;
+    font-family: 'SAS Monospace', 'Courier New', Courier, monospace;
+    font-size: 7pt;
+    font-style: normal;
+    font-weight: normal;
+    padding: 7px;
+    }
+.beforecaption {
+    background-color: #ffffff;
+    border-spacing: 0;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.body {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    margin-left: 8px;
+    margin-right: 8px;
+}
+.bodydate {
+    background-color: #ffffff;
+    border-spacing: 0;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    text-align: right;
+    vertical-align: top;
+    width: 100%;
+}
+.bycontentfolder {
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: none;
+    margin-left: 6pt;
+}
+.byline {
+    background-color: #ffffff;
+    border-spacing: 0;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.bylinecontainer > col, .bylinecontainer > colgroup > col, .bylinecontainer > colgroup, .bylinecontainer > tr, .bylinecontainer > * > tr, .bylinecontainer > thead, .bylinecontainer > tbody, .bylinecontainer > tfoot { border: none; }
+.bylinecontainer {
+    background-color: #ffffff;
+    border: none;
+    border-spacing: 1px;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    width: 100%;
+}
+.caption {
+    background-color: #ffffff;
+    border-spacing: 0;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.cell, .container {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.contentfolder, .contentitem {
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: none;
+    margin-left: 6pt;
+}
+.contentproclabel, .contentprocname {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 11pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.contents {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: decimal;
+    margin-left: 8px;
+    margin-right: 8px;
+}
+.contentsdate {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    width: 100%;
+}
+.contenttitle {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: italic;
+    font-weight: bold;
+}
+.continued {
+    background-color: #ffffff;
+    border-spacing: 0;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+    width: 100%;
+}
+.data {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.dataemphasis {
+    background-color: #ffffff;
+    border-color: #c1c1c1;
+    border-style: solid;
+    border-width: 0 1px 1px 0;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.dataemphasisfixed {
+    background-color: #ffffff;
+    border-color: #c1c1c1;
+    border-style: solid;
+    border-width: 0 1px 1px 0;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.dataempty {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.datafixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.datastrong {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.datastrongfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.date {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    width: 100%;
+}
+.document {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.errorbanner {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.errorcontent {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.errorcontentfixed {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Courier New', Courier;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.extendedpage {
+    background-color: #ffffff;
+    border-style: solid;
+    border-width: 1pt;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: italic;
+    font-weight: normal;
+    text-align: center;
+}
+.fatalbanner {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.fatalcontent {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.fatalcontentfixed {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Courier New', Courier;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.folderaction {
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: none;
+    margin-left: 6pt;
+}
+.footer {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.footeremphasis {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.footeremphasisfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.footerempty {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.footerfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.footerstrong {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.footerstrongfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.frame {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.graph > colgroup {
+    border-left: 1px solid #696969;
+    border-right: 1px solid #696969;
+}
+.graph > tbody, .graph > thead, .graph > tfoot {
+    border-top: 1px solid #696969;
+    border-bottom: 1px solid #696969;
+}
+.graph { border: hidden; }
+.graph {
+    background-color: #ffffff;
+    border: 1px solid #696969;
+    border-collapse: separate;
+    border-spacing: 1px;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    }
+.header {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.headeremphasis {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.headeremphasisfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.headerempty {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.headerfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.headersandfooters {
+    background-color: #ffffff;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.headerstrong {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.headerstrongfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.heading1 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 24pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.heading2 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 18pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.heading3 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 14pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.heading4 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 12pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.heading5 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 10pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.heading6 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.index {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.indexaction, .indexitem {
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: none;
+    margin-left: 6pt;
+}
+.indexprocname {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 11pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.indextitle {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: italic;
+    font-weight: bold;
+}
+.layoutcontainer, .layoutregion {
+    border-width: 0;
+    border-spacing: 30px;
+}
+.linecontent {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+a:link { color: #525f70 }
+.list {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: disc;
+}
+.list10 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: square;
+}
+.list2 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: circle;
+}
+.list3, .list4, .list5, .list6, .list7, .list8, .list9 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: square;
+}
+.listitem {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: disc;
+}
+.listitem10 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: square;
+}
+.listitem2 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: circle;
+}
+.listitem3, .listitem4, .listitem5, .listitem6, .listitem7, .listitem8, .listitem9 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: square;
+}
+.note {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.notebanner {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.notecontent {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.notecontentfixed {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Courier New', Courier;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.output > colgroup {
+    border-left: 1px solid #696969;
+    border-right: 1px solid #696969;
+}
+.output > tbody, .output > thead, .output > tfoot {
+    border-top: 1px solid #696969;
+    border-bottom: 1px solid #696969;
+}
+.output { border: hidden; }
+.output {
+    background-color: #ffffff;
+    border: 1px solid #696969;
+    border-collapse: separate;
+    border-spacing: 1px;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    }
+.pageno {
+    background-color: #ffffff;
+    border-spacing: 0;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+    text-align: right;
+    vertical-align: top;
+}
+.pages {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: decimal;
+    margin-left: 8px;
+    margin-right: 8px;
+}
+.pagesdate {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    width: 100%;
+}
+.pagesitem {
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: none;
+    margin-left: 6pt;
+}
+.pagesproclabel, .pagesprocname {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 11pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.pagestitle {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: italic;
+    font-weight: bold;
+}
+.paragraph {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.parskip > col, .parskip > colgroup > col, .parskip > colgroup, .parskip > tr, .parskip > * > tr, .parskip > thead, .parskip > tbody, .parskip > tfoot { border: none; }
+.parskip {
+    border: none;
+    border-spacing: 0;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+    }
+.prepage {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    text-align: left;
+}
+.proctitle {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 11pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.proctitlefixed {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.rowfooter {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.rowfooteremphasis {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.rowfooteremphasisfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.rowfooterempty {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.rowfooterfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.rowfooterstrong {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.rowfooterstrongfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.rowheader {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.rowheaderemphasis {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.rowheaderemphasisfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.rowheaderempty {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.rowheaderfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.rowheaderstrong {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.rowheaderstrongfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.systemfooter, .systemfooter10, .systemfooter2, .systemfooter3, .systemfooter4, .systemfooter5, .systemfooter6, .systemfooter7, .systemfooter8, .systemfooter9 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.systemtitle, .systemtitle10, .systemtitle2, .systemtitle3, .systemtitle4, .systemtitle5, .systemtitle6, .systemtitle7, .systemtitle8, .systemtitle9 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 12pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.systitleandfootercontainer > col, .systitleandfootercontainer > colgroup > col, .systitleandfootercontainer > colgroup, .systitleandfootercontainer > tr, .systitleandfootercontainer > * > tr, .systitleandfootercontainer > thead, .systitleandfootercontainer > tbody, .systitleandfootercontainer > tfoot { border: none; }
+.systitleandfootercontainer {
+    background-color: #ffffff;
+    border: none;
+    border-spacing: 1px;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    width: 100%;
+}
+.table > col, .table > colgroup > col {
+    border-left: 1px solid #c1c1c1;
+    border-right: 0 solid #c1c1c1;
+}
+.table > tr, .table > * > tr {
+    border-top: 1px solid #c1c1c1;
+    border-bottom: 0 solid #c1c1c1;
+}
+.table { border: hidden; }
+.table {
+    border-color: #c1c1c1;
+    border-style: solid;
+    border-width: 1px 0 0 1px;
+    border-collapse: collapse;
+    border-spacing: 0;
+    }
+.titleandnotecontainer > col, .titleandnotecontainer > colgroup > col, .titleandnotecontainer > colgroup, .titleandnotecontainer > tr, .titleandnotecontainer > * > tr, .titleandnotecontainer > thead, .titleandnotecontainer > tbody, .titleandnotecontainer > tfoot { border: none; }
+.titleandnotecontainer {
+    background-color: #ffffff;
+    border: none;
+    border-spacing: 1px;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    width: 100%;
+}
+.titlesandfooters {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 11pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.usertext {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+a:visited { color: #626f80 }
+.warnbanner {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.warncontent {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.warncontentfixed {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Courier New', Courier;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: normal;
+}
+/*]]>*/
+</style>
+<div class="c body">
+<div style="padding-bottom: 8px; padding-top: 1px">
+<div id="IDX" class="proc_title_group">
+<p class="c proctitle">The FREQTAB Procedure</p>
+</div>
+<div style="padding-bottom: 8px; padding-top: 1px">
+<div style="padding-bottom: 8px; padding-top: 1px">
+<table class="table" style="border-spacing: 0" aria-label="One-Way Frequencies">
+<caption aria-label="One-Way Frequencies"></caption>
+<colgroup><col/></colgroup><colgroup><col/><col/><col/><col/></colgroup>
+<thead>
+<tr>
+<th class="b header" scope="col">Type</th>
+<th class="r b header" scope="col">Frequency</th>
+<th class="r b header" scope="col">Percent</th>
+<th class="r b header" scope="col">Cumulative<br/>Frequency</th>
+<th class="r b header" scope="col">Cumulative<br/>Percent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="rowheader" scope="row">Hybrid</th>
+<td class="r data">70095</td>
+<td class="r data">0.70</td>
+<td class="r data">70095</td>
+<td class="r data">0.70</td>
+</tr>
+<tr>
+<th class="rowheader" scope="row">SUV</th>
+<td class="r data">1401900</td>
+<td class="r data">14.02</td>
+<td class="r data">1471995</td>
+<td class="r data">14.72</td>
+</tr>
+<tr>
+<th class="rowheader" scope="row">Sedan</th>
+<td class="r data">6121630</td>
+<td class="r data">61.21</td>
+<td class="r data">7593625</td>
+<td class="r data">75.93</td>
+</tr>
+<tr>
+<th class="rowheader" scope="row">Sports</th>
+<td class="r data">1144885</td>
+<td class="r data">11.45</td>
+<td class="r data">8738510</td>
+<td class="r data">87.38</td>
+</tr>
+<tr>
+<th class="rowheader" scope="row">Truck</th>
+<td class="r data">560760</td>
+<td class="r data">5.61</td>
+<td class="r data">9299270</td>
+<td class="r data">92.99</td>
+</tr>
+<tr>
+<th class="rowheader" scope="row">Wagon</th>
+<td class="r data">700950</td>
+<td class="r data">7.01</td>
+<td class="r data">10000220</td>
+<td class="r data">100.00</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="markdown-cell">
+<p>We see in the log that the <code>DATA</code> step took just under one second to stack the target table repeatedly to reach ~10M rows.</p>
+<p><code style="color: blue; background: none; padding: 0;"><pre></p>
+<p>NOTE: DATA statement used (Total process time):
+      real time           0.98 seconds
+      cpu time            0.06 seconds
+</pre></code></p>
+<p>PROC FREQTAB took about one-third of one second to generate frequencies for this table of ~10M rows.</p>
+<p><code style="color: blue; background: none; padding: 0;"><pre></p>
+<p>NOTE: PROCEDURE FREQTAB used (Total process time):
+      real time           0.33 seconds
+      cpu time            0.06 seconds
+</pre></code></p>
+
+</div>
+<div class="markdown-cell">
+<h2>V9 Data</h2>
+<p>Let&#39;s repeat these steps, but this time we will do everything in the V9 <code>WORK</code> library.</p>
+
+</div>
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-comment">* Stack data;</span>
+<span class="sas-syntax-sec-keyword">data</span> work.big_cars<span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">set</span> work.cars<span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">do</span> i <span class="sas-syntax-sep">=</span> <span class="sas-syntax-numeric">1</span> <span class="sas-syntax-keyword">to</span> <span class="sas-syntax-numeric">23365</span><span class="sas-syntax-sep">;</span>
+        <span class="sas-syntax-keyword">output</span><span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">end</span><span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">drop</span> i<span class="sas-syntax-sep">;</span>
+<span class="sas-syntax-sec-keyword">run</span><span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-sec-keyword">proc</span> <span class="sas-syntax-proc-name">freq</span> <span class="sas-syntax-keyword">data</span><span class="sas-syntax-sep">=</span>work.big_cars<span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">tables</span> type<span class="sas-syntax-sep">;</span>
+<span class="sas-syntax-sec-keyword">run</span><span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+<div class="cell-output">
+<style>
+/*<![CDATA[*/
+.body.c > table, .body.c > pre, .body.c div > table,
+.body.c div > pre, .body.c > table, .body.c > pre,
+.body.j > table, .body.j > pre, .body.j div > table,
+.body.j div > pre, .body.j > table, .body.j > pre,
+.body.c p.note, .body.c p.warning, .body.c p.error, .body.c p.fatal,
+.body.j p.note, .body.j p.warning, .body.j p.error, .body.j p.fatal,
+.body.c > table.layoutcontainer, .body.j > table.layoutcontainer { margin-left: auto; margin-right: auto }
+.layoutregion.l table, .layoutregion.l pre, .layoutregion.l p.note,
+.layoutregion.l p.warning, .layoutregion.l p.error, .layoutregion.l p.fatal { margin-left: 0 }
+.layoutregion.c table, .layoutregion.c pre, .layoutregion.c p.note,
+.layoutregion.c p.warning, .layoutregion.c p.error, .layoutregion.c p.fatal { margin-left: auto; margin-right: auto }
+.layoutregion.r table, .layoutregion.r pre, .layoutregion.r p.note,
+.layoutregion.r table, .layoutregion.r pre, .layoutregion.r p.note,
+.layoutregion.r p.warning, .layoutregion.r p.error, .layoutregion.r p.fatal { margin-right: 0 }
+article, aside, details, figcaption, figure, footer, header, hgroup, nav, section { display: block }
+html{ font-size: 100% }
+.body { margin: 1em; font-size: 13px; line-height: 1.231 }
+sup { position: relative; vertical-align: baseline; bottom: 0.25em; font-size: 0.8em }
+sub { position: relative; vertical-align: baseline; top: 0.25em; font-size: 0.8em }
+ul, ol { margin: 1em 0; padding: 0 0 0 40px }
+dd { margin: 0 0 0 40px }
+nav ul, nav ol { list-style: none; list-style-image: none; margin: 0; padding: 0 }
+img { border: 0; vertical-align: middle }
+svg:not(:root) { overflow: hidden }
+figure { margin: 0 }
+table { border-collapse: collapse; border-spacing: 0 }
+.layoutcontainer { border-collapse: separate; border-spacing: 0 }
+p { margin-top: 0; text-align: left }
+h1.heading1 { text-align: left }
+h2.heading2 { text-align: left }
+h3.heading3 { text-align: left }
+h4.heading4 { text-align: left }
+h5.heading5 { text-align: left }
+h6.heading6 { text-align: left }
+span { text-align: left }
+table { margin-bottom: 1em }
+td, th { text-align: left; padding: 3px 6px; vertical-align: top }
+td[class$="fixed"], th[class$="fixed"] { white-space: pre }
+section, article { padding-top: 1px; padding-bottom: 8px }
+hr.pagebreak { height: 0px; border: 0; border-bottom: 1px solid #c0c0c0; margin: 1em 0 }
+.stacked-value { text-align: left; display: block }
+.stacked-cell > .stacked-value, td.data > td.data, th.data > td.data, th.data > th.data, td.data > th.data, th.header > th.header { border: 0 }
+.stacked-cell > div.data { border-width: 0 }
+.systitleandfootercontainer { white-space: nowrap; margin-bottom: 1em }
+.systitleandfootercontainer > p { margin: 0 }
+.systitleandfootercontainer > p > span { display: inline-block; width: 100%; white-space: normal }
+.batch { display: table }
+.toc { display: none }
+.proc_note_group, .proc_title_group { margin-bottom: 1em }
+p.proctitle { margin: 0 }
+p.note, p.warning, p.error, p.fatal { display: table }
+.notebanner, .warnbanner, .errorbanner, .fatalbanner,
+.notecontent, .warncontent, .errorcontent, .fatalcontent { display: table-cell; padding: 0.5em }
+.notebanner, .warnbanner, .errorbanner, .fatalbanner { padding-right: 0 }
+.body > div > ol li { text-align: left }
+.beforecaption > h4 { margin-top: 0; margin-bottom: 0 }
+.c { text-align: center }
+.r { text-align: right }
+.l { text-align: left }
+.j { text-align: justify }
+.d { text-align: right }
+.b { vertical-align: bottom }
+.m { vertical-align: middle }
+.t { vertical-align: top }
+.accessiblecaption {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 11pt;
+    font-style: normal;
+    font-weight: bold;
+}
+a:active { color: #626f80 }
+.aftercaption {
+    background-color: #ffffff;
+    border-spacing: 0;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+    padding-top: 4pt;
+}
+.batch > colgroup {
+    border-left: 1px solid #696969;
+    border-right: 1px solid #696969;
+}
+.batch > tbody, .batch > thead, .batch > tfoot {
+    border-top: 1px solid #696969;
+    border-bottom: 1px solid #696969;
+}
+.batch { border: hidden; }
+.batch {
+    background-color: #ffffff;
+    border: 1px solid #696969;
+    border-collapse: separate;
+    border-spacing: 1px;
+    color: #2a3037;
+    font-family: 'SAS Monospace', 'Courier New', Courier, monospace;
+    font-size: 7pt;
+    font-style: normal;
+    font-weight: normal;
+    padding: 7px;
+    }
+.beforecaption {
+    background-color: #ffffff;
+    border-spacing: 0;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.body {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    margin-left: 8px;
+    margin-right: 8px;
+}
+.bodydate {
+    background-color: #ffffff;
+    border-spacing: 0;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    text-align: right;
+    vertical-align: top;
+    width: 100%;
+}
+.bycontentfolder {
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: none;
+    margin-left: 6pt;
+}
+.byline {
+    background-color: #ffffff;
+    border-spacing: 0;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.bylinecontainer > col, .bylinecontainer > colgroup > col, .bylinecontainer > colgroup, .bylinecontainer > tr, .bylinecontainer > * > tr, .bylinecontainer > thead, .bylinecontainer > tbody, .bylinecontainer > tfoot { border: none; }
+.bylinecontainer {
+    background-color: #ffffff;
+    border: none;
+    border-spacing: 1px;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    width: 100%;
+}
+.caption {
+    background-color: #ffffff;
+    border-spacing: 0;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.cell, .container {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.contentfolder, .contentitem {
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: none;
+    margin-left: 6pt;
+}
+.contentproclabel, .contentprocname {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 11pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.contents {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: decimal;
+    margin-left: 8px;
+    margin-right: 8px;
+}
+.contentsdate {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    width: 100%;
+}
+.contenttitle {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: italic;
+    font-weight: bold;
+}
+.continued {
+    background-color: #ffffff;
+    border-spacing: 0;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+    width: 100%;
+}
+.data {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.dataemphasis {
+    background-color: #ffffff;
+    border-color: #c1c1c1;
+    border-style: solid;
+    border-width: 0 1px 1px 0;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.dataemphasisfixed {
+    background-color: #ffffff;
+    border-color: #c1c1c1;
+    border-style: solid;
+    border-width: 0 1px 1px 0;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.dataempty {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.datafixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.datastrong {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.datastrongfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.date {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    width: 100%;
+}
+.document {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.errorbanner {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.errorcontent {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.errorcontentfixed {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Courier New', Courier;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.extendedpage {
+    background-color: #ffffff;
+    border-style: solid;
+    border-width: 1pt;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: italic;
+    font-weight: normal;
+    text-align: center;
+}
+.fatalbanner {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.fatalcontent {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.fatalcontentfixed {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Courier New', Courier;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.folderaction {
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: none;
+    margin-left: 6pt;
+}
+.footer {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.footeremphasis {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.footeremphasisfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.footerempty {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.footerfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.footerstrong {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.footerstrongfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.frame {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.graph > colgroup {
+    border-left: 1px solid #696969;
+    border-right: 1px solid #696969;
+}
+.graph > tbody, .graph > thead, .graph > tfoot {
+    border-top: 1px solid #696969;
+    border-bottom: 1px solid #696969;
+}
+.graph { border: hidden; }
+.graph {
+    background-color: #ffffff;
+    border: 1px solid #696969;
+    border-collapse: separate;
+    border-spacing: 1px;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    }
+.header {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.headeremphasis {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.headeremphasisfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.headerempty {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.headerfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.headersandfooters {
+    background-color: #ffffff;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.headerstrong {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.headerstrongfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.heading1 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 24pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.heading2 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 18pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.heading3 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 14pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.heading4 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 12pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.heading5 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 10pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.heading6 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.index {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.indexaction, .indexitem {
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: none;
+    margin-left: 6pt;
+}
+.indexprocname {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 11pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.indextitle {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: italic;
+    font-weight: bold;
+}
+.layoutcontainer, .layoutregion {
+    border-width: 0;
+    border-spacing: 30px;
+}
+.linecontent {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+a:link { color: #525f70 }
+.list {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: disc;
+}
+.list10 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: square;
+}
+.list2 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: circle;
+}
+.list3, .list4, .list5, .list6, .list7, .list8, .list9 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: square;
+}
+.listitem {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: disc;
+}
+.listitem10 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: square;
+}
+.listitem2 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: circle;
+}
+.listitem3, .listitem4, .listitem5, .listitem6, .listitem7, .listitem8, .listitem9 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: square;
+}
+.note {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.notebanner {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.notecontent {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.notecontentfixed {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Courier New', Courier;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.output > colgroup {
+    border-left: 1px solid #696969;
+    border-right: 1px solid #696969;
+}
+.output > tbody, .output > thead, .output > tfoot {
+    border-top: 1px solid #696969;
+    border-bottom: 1px solid #696969;
+}
+.output { border: hidden; }
+.output {
+    background-color: #ffffff;
+    border: 1px solid #696969;
+    border-collapse: separate;
+    border-spacing: 1px;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    }
+.pageno {
+    background-color: #ffffff;
+    border-spacing: 0;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+    text-align: right;
+    vertical-align: top;
+}
+.pages {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: decimal;
+    margin-left: 8px;
+    margin-right: 8px;
+}
+.pagesdate {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    width: 100%;
+}
+.pagesitem {
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    list-style-type: none;
+    margin-left: 6pt;
+}
+.pagesproclabel, .pagesprocname {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 11pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.pagestitle {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: italic;
+    font-weight: bold;
+}
+.paragraph {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.parskip > col, .parskip > colgroup > col, .parskip > colgroup, .parskip > tr, .parskip > * > tr, .parskip > thead, .parskip > tbody, .parskip > tfoot { border: none; }
+.parskip {
+    border: none;
+    border-spacing: 0;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+    }
+.prepage {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    text-align: left;
+}
+.proctitle {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 11pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.proctitlefixed {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.rowfooter {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.rowfooteremphasis {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.rowfooteremphasisfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.rowfooterempty {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.rowfooterfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.rowfooterstrong {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.rowfooterstrongfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.rowheader {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.rowheaderemphasis {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.rowheaderemphasisfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: italic;
+    font-weight: normal;
+}
+.rowheaderempty {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.rowheaderfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.rowheaderstrong {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.rowheaderstrongfixed {
+    background-color: #ffffff;
+    border: 1px solid #ebedef;
+    color: #2a3037;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.systemfooter, .systemfooter10, .systemfooter2, .systemfooter3, .systemfooter4, .systemfooter5, .systemfooter6, .systemfooter7, .systemfooter8, .systemfooter9 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.systemtitle, .systemtitle10, .systemtitle2, .systemtitle3, .systemtitle4, .systemtitle5, .systemtitle6, .systemtitle7, .systemtitle8, .systemtitle9 {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 12pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.systitleandfootercontainer > col, .systitleandfootercontainer > colgroup > col, .systitleandfootercontainer > colgroup, .systitleandfootercontainer > tr, .systitleandfootercontainer > * > tr, .systitleandfootercontainer > thead, .systitleandfootercontainer > tbody, .systitleandfootercontainer > tfoot { border: none; }
+.systitleandfootercontainer {
+    background-color: #ffffff;
+    border: none;
+    border-spacing: 1px;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    width: 100%;
+}
+.table > col, .table > colgroup > col {
+    border-left: 1px solid #c1c1c1;
+    border-right: 0 solid #c1c1c1;
+}
+.table > tr, .table > * > tr {
+    border-top: 1px solid #c1c1c1;
+    border-bottom: 0 solid #c1c1c1;
+}
+.table { border: hidden; }
+.table {
+    border-color: #c1c1c1;
+    border-style: solid;
+    border-width: 1px 0 0 1px;
+    border-collapse: collapse;
+    border-spacing: 0;
+    }
+.titleandnotecontainer > col, .titleandnotecontainer > colgroup > col, .titleandnotecontainer > colgroup, .titleandnotecontainer > tr, .titleandnotecontainer > * > tr, .titleandnotecontainer > thead, .titleandnotecontainer > tbody, .titleandnotecontainer > tfoot { border: none; }
+.titleandnotecontainer {
+    background-color: #ffffff;
+    border: none;
+    border-spacing: 1px;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+    width: 100%;
+}
+.titlesandfooters {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 11pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.usertext {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+a:visited { color: #626f80 }
+.warnbanner {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: bold;
+}
+.warncontent {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Anova UI', Arial, 'Albany AMT', Helvetica, Helv;
+    font-size: 9pt;
+    font-style: normal;
+    font-weight: normal;
+}
+.warncontentfixed {
+    background-color: #ffffff;
+    color: #696969;
+    font-family: 'Courier New', Courier;
+    font-size: 8pt;
+    font-style: normal;
+    font-weight: normal;
+}
+/*]]>*/
+</style>
+<div class="c body">
+<div style="padding-bottom: 8px; padding-top: 1px">
+<div id="IDX" class="proc_title_group">
+<p class="c proctitle">The FREQ Procedure</p>
+</div>
+<div style="padding-bottom: 8px; padding-top: 1px">
+<div style="padding-bottom: 8px; padding-top: 1px">
+<table class="table" style="border-spacing: 0" aria-label="One-Way Frequencies">
+<caption aria-label="One-Way Frequencies"></caption>
+<colgroup><col/></colgroup><colgroup><col/><col/><col/><col/></colgroup>
+<thead>
+<tr>
+<th class="b header" scope="col">Type</th>
+<th class="r b header" scope="col">Frequency</th>
+<th class="r b header" scope="col">Percent</th>
+<th class="r b header" scope="col">Cumulative<br/>Frequency</th>
+<th class="r b header" scope="col">Cumulative<br/>Percent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="rowheader" scope="row">Hybrid</th>
+<td class="r data">70095</td>
+<td class="r data">0.70</td>
+<td class="r data">70095</td>
+<td class="r data">0.70</td>
+</tr>
+<tr>
+<th class="rowheader" scope="row">SUV</th>
+<td class="r data">1401900</td>
+<td class="r data">14.02</td>
+<td class="r data">1471995</td>
+<td class="r data">14.72</td>
+</tr>
+<tr>
+<th class="rowheader" scope="row">Sedan</th>
+<td class="r data">6121630</td>
+<td class="r data">61.21</td>
+<td class="r data">7593625</td>
+<td class="r data">75.93</td>
+</tr>
+<tr>
+<th class="rowheader" scope="row">Sports</th>
+<td class="r data">1144885</td>
+<td class="r data">11.45</td>
+<td class="r data">8738510</td>
+<td class="r data">87.38</td>
+</tr>
+<tr>
+<th class="rowheader" scope="row">Truck</th>
+<td class="r data">560760</td>
+<td class="r data">5.61</td>
+<td class="r data">9299270</td>
+<td class="r data">92.99</td>
+</tr>
+<tr>
+<th class="rowheader" scope="row">Wagon</th>
+<td class="r data">700950</td>
+<td class="r data">7.01</td>
+<td class="r data">10000220</td>
+<td class="r data">100.00</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="markdown-cell">
+<p>We see in the log that the <code>DATA</code> step took a little under two seconds (about 1.75 times longer) to stack the V9 target table repeatedly to reach ~10M rows.</p>
+<p><code style="color: blue; background: none; padding: 0;"><pre></p>
+<p>NOTE: DATA statement used (Total process time):
+      real time           1.71 seconds
+      cpu time            1.42 seconds
+</pre></code></p>
+<p>PROC FREQ took just under half a second (about 1.5 times longer) to generate frequencies for this V9 table of ~10M rows.</p>
+<p><code style="color: blue; background: none; padding: 0;"><pre></p>
+<p>NOTE: PROCEDURE FREQ used (Total process time):
+      real time           0.49 seconds
+      cpu time            0.55 seconds
+</pre></code></p>
+<h2>Reflections on CAS vs. V9</h2>
+<p><em>OK, CAS did execute faster, but V9 performance is still very fast, and we&#39;re measuring in fractions of seconds</em> you may be thinking right now. That is true, but these are very simple examples, and performance differences between CAS and V9 can get quite noticeable when performing more complex operations.</p>
+<p>Furthermore, the performance gulf between CAS and V9 widens further once you take into account that <strong>sorting is no longer needed in CAS</strong>. Traditional V9 SAS data tables are stored on a disk, and the rows have an inherent ordering to them. In a distributed, in-memory environment like CAS, a concept like row ordering no longer makes sense. How do you decide which row is &quot;first&quot; when the data are distributed across multiple nodes?</p>
+<p>Because row ordering as a concept stops making sense in CAS, sorting goes away with it. Experienced SAS 9 programmers are familiar with the standard practice of sorting data before merging in a <code>DATA</code> step. SAS Viya programmers get the luxury of skipping the sorting and proceeding right to the merging. Eliminating computationally expensive sorting steps from workflows can yield substantial performance gains.</p>
+<h1>Necessary Adjustments</h1>
+<p>Unfortunately, the move from V9 to CAS is not all sunshine and rainbows. Although we happily bid goodbye to some relics like sorting, some tradeoffs are a part of the bargain. Not everything I list below is necessarily a downgrade, but these differences may trip up SAS Viya novices.</p>
+<h2>CAS and SQL</h2>
+<p>Although my personal bias is to rely on traditional SAS <code>DATA</code> and <code>PROC</code> steps for most data manipulation, I know some SAS users really, really love <code>PROC SQL</code>, and I have seen some very impressive (if somewhat head-spinning) queries that do a whole lot in a single step. Unfortunately, at the time that I am writing this, SAS Viya does not allow <code>PROC SQL</code> to read from CAS and write back to CAS in a single step.</p>
+<p>It is possible to use <code>PROC SQL</code> when both input and output destinations are V9, or if one destination is CAS and the other is V9, but for reasons I do not fully understand, using <code>PROC SQL</code> is forbidden when both input and output destinations are CAS.</p>
+
+</div>
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-comment">* This will not work;</span>
+<span class="sas-syntax-sec-keyword">proc</span> <span class="sas-syntax-proc-name">sql</span><span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-keyword">create</span> <span class="sas-syntax-keyword">table</span> casuser.cars_sql as
+    select <span class="sas-syntax-sep">*</span> 
+    from casuser.cars<span class="sas-syntax-sep">;</span>
+<span class="sas-syntax-sec-keyword">quit</span><span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+
+<div class="markdown-cell">
+<p>The log provides the following feedback:</p>
+<p><code style="color: red; background: none; padding: 0;"><pre></p>
+<p>ERROR: PROC SQL does not support CREATE TABLE AS statements where both the source and destination include SASVIYA libname references.
+</pre></code></p>
+<p>SAS does offer <code>PROC FEDSQL</code> as an option for users who wish to read from and write to CAS in a single SQL query, but I find this procedure&#39;s strict adherence to the ANSI SQL:1999 core standard to be heavy-handed and its log messages generally to be vague and unhelpful when errors occur (and believe me, you will see them often). To add to my list of complaints, odd limitations are imposed on <code>PROC FEDSQL</code> on SAS Viya. One example is that subqueries can be used with certain other data sources, but <strong>not</strong> with CAS data. I tend to avoid <code>PROC FEDSQL</code> for those reasons.</p>
+<h2>Data Complications</h2>
+<p>In SAS 9, data management is pretty straightforward. You save data into a file with a *.sas7bdat file extension. That file lives somewhere on your computer or on a server, depending on your configuration. You specify a LIBNAME as a shortcut of sorts to the folder where your data file is saved. You reference tables in a LIBNAME.TABLE format. Pretty easy.</p>
+<p>In SAS Viya, things get a bit more complicated. We already talked a bit about sessions, servers, and CASLIBs, but the differences go even deeper than that. In general, I would say that data gets more complicated in SAS Viya, which increases the learning curve. It&#39;s not awful, but there are a few more concepts to mentally juggle when dealing with data in CAS.</p>
+<h2>Revisiting Established Concepts</h2>
+<p>First, let&#39;s revisit some topics I already mentioned above. Depending on your specific system configuration, when you log onto SAS Viya, you may have multiple available servers. If desired, you can set up separate CAS sessions to connect to each and every one of these servers, if you like. You could even have multiple sessions connected to the same server if you like, although there would be little practical value in doing that.</p>
+<p>CAS data lives in what are called CASLIBs on each server. Most (but not all, see below) SAS code needs you to assign a LIBNAME to the desired CASLIB before you can work with the table in SAS code.</p>
+<h2>New Data Concepts</h2>
+<p>SAS Viya was built to permit data to be accessed flexibly by users with varying access permissions in a cloud environment. To accommodate this goal, some new concepts had to get added to the old SAS 9 model.</p>
+<h3>Scope and Promotion</h3>
+<p>CAS tables now include the concept of <strong>scope</strong>, which may be either local or global. When I first create a CAS data table, it has <strong>local</strong> (or sometimes referred to as <strong>session</strong>) <strong>scope</strong>, which means only I can see and use it. Even if I save my data table to a CASLIB that others can access, nobody but me will be able to see or access my data table until I make it visible to them. This can get a little confusing when moving between SAS Viya applications. I may be able to see and use a local-scope table in SAS Studio, but when I switch over to SAS Visual Analytics (still logged in as myself), I won&#39;t be able to see the table there. This is because local scope doesn&#39;t just limit access to the user, but to a session, and Visual Analytics is using a different session than SAS Studio.</p>
+<p>The process that allows local-scope data tables to be visible and accessible to other users and sessions is called <strong>promotion</strong>. Once I promote a data table, it goes from local scope to <strong>global scope</strong>. A table with global scope can be seen and accessed by any other user or session (including me in SAS Visual Analytics), provided they meet all access requirements.</p>
+<h3>Saving and Loading - Not What They Seem</h3>
+<p>Words like &quot;load&quot; and &quot;save&quot; have very specific connotations in computing, and this goes back decades. Loading involves reading and saving involves writing. SAS Viya uses these terms differently than most users would likely expect. In SAS Viya, both involve outputing or creating something, but the difference depends on the <em>type</em> of thing you create.</p>
+<p>First of all, CAS handles data very differently than SAS 9. Whereas SAS 9 reads/writes *.sas7bdat files that are saved to a disk, SAS Viya applications like SAS Studio and SAS Visual Analytics use <strong>in-memory</strong> data.</p>
+<blockquote>
+<p>In SAS Viya, the term &quot;load&quot; refers to <em>loading</em> data into memory.</p>
+</blockquote>
+<p>So, when you read a V9 data table from disk (e.g., reading a table in <code>WORK</code>) and you copy it to a CASLIB in a <code>DATA</code> step, you are actually <strong>loading</strong> that table into memory when you do that. <strong>Everything important involving CAS data in SAS Viya uses in-memory data.</strong> Whether you are running code, building an interactive dashboard, or training a model, you are using in-memory data in each case.</p>
+<p><strong>Everything stored in memory is temporary.</strong> Switch off the power, and it&#39;s gone with a <em>poof!</em> For this reason, it is important to have backup files stored, and this is where the &quot;save&quot; part comes in.</p>
+<blockquote>
+<p>In SAS Viya, the term &quot;save&quot; refers to <em>saving</em> a backup copy of data.</p>
+</blockquote>
+<p>Should something unforeseen happen that corrupts or deletes the in-memory data, its backup file (usually saved in *.sashdat or *.csv format) is used to reload the data back into memory. <strong>The backup file serves only to reload data back into memory.</strong> No code, reports, models, etc. make direct use of the backup file, with the lone exception being code used to create, overwrite, or delete a backup file.</p>
+<h3>Reloading Data from a Backup File</h3>
+<p>Let&#39;s say we have an in-memory table and a backup file saved in a CASLIB. For whatever reason, the in-memory table gets unloaded from memory. What happens? Confusingly, different SAS Viya applications handle this situation differently.</p>
+<p>If the table in question is connect to a SAS Visual Analytics report, as soon as a user opens that report, SAS Viya will detect that the table is not currently loaded into memory, and it will reload the table from its backup file automatically to display the report.</p>
+<p>SAS Studio is not so kind. If a user runs code that references a CAS table that is not currently loaded into memory, the code will crash and SAS Studio will raise an error. It is up to the user to reload the table before running code.</p>
+<p>SAS Viya users must keep differences like this in mind if they regularly use both applications.</p>
+<h3>Row Level Security</h3>
+<p>I will not go into great detail here, but SAS Viya allows tremendous flexibility when granting users access to data. Data access in SAS Viya is not &quot;all or nothing&quot; but rather, users can be restricted to see and access only <em>portions</em> of data based on their row level security settings. For example, if a shared data table contains an organization&#39;s worldwide sales numbers, the table&#39;s creator can place different restrictions on different users. Frontline Sales staff can be limited to seeing only their assigned accounts, regional Sales managers can see all accounts in their region, and Executive leadership can see the global view.</p>
+<p>The tradeoff for this added flexibility is added complexity when granting and managing user access.</p>
+<h2>Exceptions to Rules</h2>
+<p>I previously said that SAS programmers need to use a LIBNAME when using &quot;traditional&quot; SAS <code>DATA</code> and <code>PROC</code> steps to access CAS data. The word &quot;traditional&quot; here implies most SAS procedures, but there are certain exceptions. Most notably, <code>PROC CASUTIL</code>, <code>PROC CAS</code>, and <code>PROC FEDSQL</code> will use the CASLIB instead of the LIBNAME when dealing with CAS data. Users need to be mindful of which procedure they are using and reference the appropriate LIBNAME or CASLIB accordingly.</p>
+
+</div>
+<div class="markdown-cell">
+<h1>Saving and Promoting</h1>
+<p>So far, all tables I loaded into CAS were <strong>local scope</strong> tables, meaning they were accessible only to me in the present session. If I wanted to share my data table with anyone else, including myself in another application like SAS Visual Analytics, I need to <strong>promote</strong> the data to global scope. Furthermore, because data loaded into memory could become corrupted or get deleted with no recourse, we will <strong>save</strong> a backup file that can be used to reload the in-memory data, if needed.</p>
+<p>I generally rely on <code>PROC CASUTIL</code> to load, promote, and/or save CAS data tables.</p>
+<p>Note: The <code>CASUSER</code> location we have been using for convenience in these examples <strong>is not ideal for sharing in practice</strong>. This CASLIB is specific to me as an individual user. In the real world, using a team/shared CASLIB would be preferable, but we are just demonstrating code here.</p>
+<h2>Promote and Save an Existing CAS Table</h2>
+<p>Let&#39;s start by promoting a local scope CAS table to global scope. We will save a backup *.sashdat file for this table as well.</p>
+<p><strong>Important:</strong> Once a table is promoted to global status, it is protected from being overwritten easily. A promoted table must be purposefully <strong>unloaded</strong> instead of being overwritten.</p>
+
+</div>
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-sec-keyword">proc</span> <span class="sas-syntax-proc-name">casutil</span> <span class="sas-syntax-keyword">sessref</span><span class="sas-syntax-sep">=</span>casmain<span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-comment">/* Promote CAS data and rename promoted version */</span>
+    <span class="sas-syntax-keyword">promote</span>
+        <span class="sas-syntax-comment">/* Input CASLIB and table */</span>
+        <span class="sas-syntax-keyword">incaslib</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span>
+        <span class="sas-syntax-keyword">casdata</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_cu"</span>
+        <span class="sas-syntax-keyword">keep</span>  <span class="sas-syntax-comment">/* Keep the local scope version of the table after promoting */</span>
+        <span class="sas-syntax-comment">/* Rename promoted copy for fun */</span>
+        <span class="sas-syntax-keyword">outcaslib</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span>
+        <span class="sas-syntax-keyword">casout</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_promoted"</span>
+    <span class="sas-syntax-sep">;</span>
+
+    <span class="sas-syntax-comment">/* Save a sashdat backup file from the promoted in-memory table */</span>
+    <span class="sas-syntax-keyword">save</span>
+        <span class="sas-syntax-comment">/* Input CASLIB and in-memory data */</span>
+        <span class="sas-syntax-keyword">incaslib</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span>
+        <span class="sas-syntax-keyword">casdata</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_promoted"</span>
+        <span class="sas-syntax-comment">/* Output CASLIB and file name */</span>
+        <span class="sas-syntax-comment">/* SAS will automatically add .sashdat file extension if none provided */</span>
+        <span class="sas-syntax-comment">/* Linux file names are CASE SENSITIVE */</span>
+        <span class="sas-syntax-keyword">outcaslib</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span>
+        <span class="sas-syntax-keyword">casout</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_promoted"</span>
+        <span class="sas-syntax-keyword">replace</span>  <span class="sas-syntax-comment">/* Replace cars_promoted.sashdat if it already exists */</span>
+    <span class="sas-syntax-sep">;</span>
+<span class="sas-syntax-sec-keyword">quit</span><span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+
+<div class="markdown-cell">
+<h2>Load, Promote, and Save V9 SAS Data Table</h2>
+<p>Here is how we load a V9 SAS data table into CAS, promote it, and save a backup file.</p>
+
+</div>
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-sec-keyword">proc</span> <span class="sas-syntax-proc-name">casutil</span> <span class="sas-syntax-keyword">sessref</span><span class="sas-syntax-sep">=</span>casmain<span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-comment">/* Load V9 data to CAS */</span>
+    <span class="sas-syntax-keyword">load</span> 
+        <span class="sas-syntax-comment">/* Input V9 LIBNAME.table - no quotes here */</span>
+        <span class="sas-syntax-keyword">data</span><span class="sas-syntax-sep">=</span>sashelp.cars
+        <span class="sas-syntax-comment">/* Output CASLIB and table name */</span>
+        <span class="sas-syntax-keyword">outcaslib</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span>
+        <span class="sas-syntax-keyword">casout</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_v9_promoted"</span>
+        <span class="sas-syntax-keyword">promote</span>  <span class="sas-syntax-comment">/* Promote the table once loaded */</span>
+    <span class="sas-syntax-sep">;</span>
+
+    <span class="sas-syntax-comment">/* Save a sashdat backup file from the promoted in-memory table */</span>
+    <span class="sas-syntax-comment">/* This looks similar to the previous example */</span>
+    <span class="sas-syntax-keyword">save</span>
+        <span class="sas-syntax-comment">/* Input in-memory table created above in LOAD statement */</span>
+        <span class="sas-syntax-keyword">incaslib</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span>
+        <span class="sas-syntax-keyword">casdata</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_v9_promoted"</span>
+        <span class="sas-syntax-comment">/* Output backup file details */</span>
+        <span class="sas-syntax-keyword">outcaslib</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span>
+        <span class="sas-syntax-keyword">casout</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_v9_promoted"</span>
+        <span class="sas-syntax-keyword">replace</span>
+    <span class="sas-syntax-sep">;</span>
+<span class="sas-syntax-sec-keyword">quit</span><span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+
+<div class="markdown-cell">
+<h1>Unloading In-Memory Data and Deleting Backup Files</h1>
+<p>Let&#39;s say we are done using our data, so we wish to remove it. Recall that there is both an in-memory data table and a *.sashdat backup file. Here is how we remove those.</p>
+
+</div>
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-comment">* Table #1;</span>
+<span class="sas-syntax-sec-keyword">proc</span> <span class="sas-syntax-proc-name">casutil</span> <span class="sas-syntax-keyword">sessref</span><span class="sas-syntax-sep">=</span>casmain<span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-comment">/* Unload data from memory */</span>
+    <span class="sas-syntax-keyword">droptable</span>
+        <span class="sas-syntax-keyword">incaslib</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span>
+        <span class="sas-syntax-keyword">casdata</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_promoted"</span>
+        <span class="sas-syntax-keyword">quiet</span>  <span class="sas-syntax-comment">/* Do not throw an error if the table is not currently loaded into memory */</span>
+    <span class="sas-syntax-sep">;</span>
+
+    <span class="sas-syntax-comment">/* Delete backup file */</span>
+    <span class="sas-syntax-keyword">deletesource</span>
+        <span class="sas-syntax-keyword">incaslib</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span>
+        <span class="sas-syntax-keyword">casdata</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_promoted.sashdat"</span>  <span class="sas-syntax-comment">/* CASE SENSITIVE, and include file extension here */</span>
+        <span class="sas-syntax-keyword">quiet</span>  <span class="sas-syntax-comment">/* Again, do not throw an error if file not found */</span>
+    <span class="sas-syntax-sep">;</span>
+<span class="sas-syntax-sec-keyword">quit</span><span class="sas-syntax-sep">;</span>
+
+<span class="sas-syntax-comment">* Table #2;</span>
+<span class="sas-syntax-sec-keyword">proc</span> <span class="sas-syntax-proc-name">casutil</span> <span class="sas-syntax-keyword">sessref</span><span class="sas-syntax-sep">=</span>casmain<span class="sas-syntax-sep">;</span>
+    <span class="sas-syntax-comment">/* Unload data from memory */</span>
+    <span class="sas-syntax-keyword">droptable</span>
+        <span class="sas-syntax-keyword">incaslib</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span>
+        <span class="sas-syntax-keyword">casdata</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_v9_promoted"</span>
+        <span class="sas-syntax-keyword">quiet</span>
+    <span class="sas-syntax-sep">;</span>
+
+    <span class="sas-syntax-comment">/* Delete backup file */</span>
+    <span class="sas-syntax-keyword">deletesource</span>
+        <span class="sas-syntax-keyword">incaslib</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"casuser"</span>
+        <span class="sas-syntax-keyword">casdata</span><span class="sas-syntax-sep">=</span><span class="sas-syntax-string">"cars_v9_promoted.sashdat"</span>
+        <span class="sas-syntax-keyword">quiet</span>
+    <span class="sas-syntax-sep">;</span>
+<span class="sas-syntax-sec-keyword">quit</span><span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+
+<div class="markdown-cell">
+<h1>Terminating CAS Sessions</h1>
+<p>Although your CAS session will eventually time out and terminate on its own, closing your CAS session when you are done is considered best practice. The following code ends <strong>all</strong> active CAS sessions.</p>
+
+</div>
+<div class="code-cell">
+<pre><code class="hljs"><span class="sas-syntax-keyword">cas</span> <span class="sas-syntax-keyword">_all_</span> <span class="sas-syntax-keyword">terminate</span><span class="sas-syntax-sep">;</span></code></pre>
+<div class="languageId">sas</div>
+</div>
+
+<div class="markdown-cell">
+<h1>Closing Thoughts</h1>
+<p>The road from SAS 9 to SAS Viya was sometimes a bumpy one for me. I found the documentation and educational materials to be a bit confusing at times, and I sometimes found log messages to be a bit unclear. Over time, I overcame these challenges and now I do most of my day-to-day work in SAS Viya without any issue. I put together this notebook to go over a few topics I found to be particularly confusing when I was learning SAS Viya, and I hope SAS Viya novices who read it may find these examples useful.</p>
+
+</div>
+
+  </body>
+</html>
