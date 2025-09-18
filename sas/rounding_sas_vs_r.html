@@ -2552,7 +2552,7 @@ a:visited { color: #626f80 }
 <h1>Why Is R Different?</h1>
 <p>Why does R round ties to the nearest even integer instead of always rounding up? As demonstrated in the above examples, the answer is <strong>bias</strong>. Always rounding up introduces positive bias into the rounded numbers. As noted on <a href="https://cran.r-project.org/web/packages/scrutiny/vignettes/rounding-in-depth.html">this page</a>, R&#39;s rounding rules conform to the <a href="https://en.m.wikipedia.org/wiki/IEEE_754#Roundings_to_nearest">IEEE 754</a> technical standard (as does <a href="https://docs.python.org/3.11/library/functions.html#round">Python</a>, by the way). Reducing bias is obviously a good thing, but there are some nuances to this practice that may create some unexpected results.</p>
 <h1>Gotchas</h1>
-<p>It is important to keep in mind that most decimal numbers cannot be expressed as fractions, and therefore rounding to the closest even digit may sometimes lead to unexpected results. Let&#39;s see what happens when we round a sequence of numbers to the first digit.</p>
+<p>It is important to recognize that some decimal numbers cannot be precisely stored in a binary format, and therefore rounding to the closest even digit may sometimes lead to unexpected results. Let&#39;s see what happens when we round a sequence of numbers to the first digit.</p>
 <h2>Provide a Vector of Values</h2>
 <p>First, let&#39;s manually enter a vector of values (1.05, 1.15, 1.25) and round them to the first digit.</p>
 <h3>Code</h3>
