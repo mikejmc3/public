@@ -1,0 +1,85 @@
+---
+title: "Matrix Operations Demo"
+output: html_notebook
+---
+
+One thing in particular that I have always appreciated about R is how elegantly it handles matrix operations. I have never gotten much joy from calculating a determinant by hand, but R makes life much easier in this particular regard.
+
+While SAS also has great capabilities with matrix operations, its equivalent offering (`PROC IML`) is an add-on component that is not included as part of the base SAS package. With R, you don't even need to load in a special package; matrix operations work in a "batteries included" way with the base software.
+
+Let's have a little bit of fun with a very simple demonstration of matrix operations in R.
+
+# Demo Data
+
+Let's create three objects. We will name them `y`, `x1`, and `x2`. As you can probably guess by their names, we'll use these in a linear regression model eventually.
+
+```{r}
+y <- c(222, 217, 189, 263, 172, 129, 166, 271, 207, 201)
+x1 <- c(115, 114, 73, 127, 87, 65, 82, 115, 95, 123)
+x2 <- c(114, 106, 89, 142, 79, 68, 97, 116, 106, 103)
+
+# Combine these into a data frame to simplify some downstream steps
+df <- data.frame(y = y, x1 = x1, x2 = x2)
+```
+
+# Explore
+
+Let's use `ggplot2` to explore these three objects. I'm also going to use `GGally` here to help with creating a scatter plot matrix.
+
+```{r}
+# Load packages
+require(ggplot2)
+require(GGally)
+
+# Create plot
+ggpairs(
+    df,
+    diag = list(continuous = "densityDiag"),
+    upper = list(continuous = "cor"),
+    lower = list(continuous = "points")
+)
+```
+
+# Fit a Linear Regression Model
+
+Let's use the `lm` function to predict values of `y` from `x1` and `x2`.
+
+```{r}
+fit_lm <- lm(y ~ x1 + x2, data = df)
+summary(fit_lm)
+```
+
+# Use Matrix Operations to Calculate the Coefficients
+
+When I was in graduate school, I practically had this formula burned into my brain.
+
+$$
+\hat{\boldsymbol{\beta}} = (\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\mathbf{y}
+$$
+
+Let's redo the `lm` step the hard way, this time using matrix operations. First, let's set up matrix objects that I will name `Y` and `X`. Because we want our regression model to have an intercept, I will add a column of 1s to the far left side of the `X` matrix.
+
+```{r}
+# Create matrixes
+Y <- cbind(y = y)
+X <- cbind(int = 1, x1 = x1, x2 = x2)
+
+# Display them
+print(Y)
+print(X)
+```
+
+Now, let's calculate the model coefficients using the formula above. I won't go over all matrix operators in R here, but I will point out that `%*%` indicates matrix multiplication, `t()` transposes a matrix, and `solve()` is the inverse of a matrix.
+
+```{r}
+B <- solve(t(X) %*% X) %*% t(X) %*% Y
+print(B)
+```
+
+Let's compare back to the coefficients we obtained from `lm`.
+
+```{r}
+print(fit_lm$coefficients)
+```
+
+As we can see here, the results we obtained from our manual calculations match what is produced in by the `lm` function.
