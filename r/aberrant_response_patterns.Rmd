@@ -1,0 +1,106 @@
+---
+title: "Aberrant Response Patterns"
+output: html_notebook
+---
+
+In the world of assessment, we often think of the test score as the most critical information to gain from taking a test. In testing lingo, the **raw score** refers to the number of points earned (identical to the number of correct responses if all test questions have binary 0/1 scores). Sometimes, the raw score may be transformed into a **scale score** for easier interpretation, but for the purposes of this notebook, we'll focus on raw scores.
+
+Although it is true that answering *any* 7 items out of 10 results in the same raw score of 7/10 or 70%, there may be implications for test-taker ability estimation depending on *which particular* 7 items are answered correctly when we use more advanced measurement techniques such as **Item Response Theory** (IRT).
+
+Under IRT, test-taker ability ($\theta$) is calculated via maximum likelihood estimation.
+
+$$
+\log L=\sum_{j=1}^{J}\log[P_{j}^{X_{j}}Q_{j}^{1-X_{j}}]
+$$
+
+As I will demonstrate below, not only does the **count** of correct answers influence the log-likelihood function, but **which** items are answered correctly influences it.
+
+# Data Preparation
+
+Let's provide some characteristics for an example 5-item test. In the real world, we would not attempt to fit a 3 parameter logistic (3PL) IRT model to such a small test, but we're just having fun here.
+
+```{r}
+# Provide parameters for 5 items
+a_parm <- c(1.27, 1.34, 1.14, 1.00, 0.67)
+b_parm <- c(1.19, 0.59, 0.15, -0.59, -2.00)
+c_parm <- c(0.10, 0.15, 0.15, 0.20, 0.01)
+
+# Scaling constant (set to 1.7 to include or 1.0 to exclude)
+scaling_constant <- 1.70 
+```
+
+# Define the Log-Likelihood Function
+
+Now let's set up some R functions to calculate the log-likelihood function for a given pattern of responses.
+
+```{r}
+# P and Q for a single theta value
+# P: probability of a correct response
+p <- function(theta) {
+    c_parm + (1 - c_parm) / (1 + exp(-scaling_constant * a_parm * (theta - b_parm)))
+}
+
+# Q: probability of an incorrect response, or 1 - P
+q <- function(theta) {
+    1 - p(theta)
+}
+
+# Log-likelihood at a single theta value
+log_like_single <- function(theta) {
+    probs <- p(theta)^resp * q(theta)^(1 - resp)
+    sum(log(probs))
+}
+
+# Wrapper so curve() (below) can handle a vector of x-values
+log_like <- function(x) {
+    sapply(x, log_like_single)
+}
+```
+
+# Example 1: Normal Response Pattern
+
+To oversimplify just a bit, the "expected" pattern for a given raw score of $r$ on a test comprised of $J$ binary-scored items is that the test-taker probably answered the $r$ easiest correctly, and they answered the $J - r$ most difficult items incorrectly. Let's look at a normal response pattern for a test-taker who answered the 3 easiest items correctly.
+
+```{r}
+# Response pattern
+resp <- c(0, 0, 1, 1, 1)
+
+# Display log-likelihood function
+par(las = 1)
+curve(
+    log_like,
+    from = -3, to = 3,
+    ylim = c(-12, 0),
+    xlab = expression(paste("Ability(", theta, ")")),
+    ylab = "Log-Likelihood"
+)
+```
+
+We see that the log-likelihood function for this response pattern peaks just past the population mean of 0.
+
+# Example 2: Aberrant Response Pattern
+
+Now, let's see what happens when a test-taker once again gets a raw score of 3, but they answer the 3 **most difficult** items correctly. This is what is often referred to as an **aberrant response pattern**.
+
+```{r}
+# Response pattern
+resp <- c(1, 1, 1, 0, 0)
+
+# Display log-likelihood function
+par(las = 1)
+curve(
+    log_like,
+    from = -3, to = 3,
+    ylim = c(-12, 0),
+    xlab = expression(paste("Ability(", theta, ")")),
+    ylab = "Log-Likelihood"
+)
+```
+
+Notice that the log-likelihood function is much flatter, and there is a local minimum as well.
+
+# So What?
+
+Okay, so why does any of this matter? As demonstrated above, aberrant response patterns may create difficulties for traditional test-taker ability estimation as flat functions and local minima may derail a Newton Raphson algorithm, although I will admit that this contrived example is rather exaggerated and ability estimation in real-world settings typically involves mixing the observed likelihood function with a prior distribution, which helps to address these and other issues that come up in ML estimation.
+
+The bigger deal is **cheating**. An aberrant response pattern may be indicative that some form of cheating has occurred. This may take the form of exposure to test questions prior to the exam, copying answers from other test-takers, or receiving assistance from others during the exam. Of course, like any other suspicious observation, an aberrant response pattern itself is not a "smoking gun" that proves cheating occurred, but the presence of patterns like these may warrant further investigation.
