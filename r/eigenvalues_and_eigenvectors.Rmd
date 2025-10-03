@@ -1,0 +1,158 @@
+---
+title: "Eigenvalues and Eigenvectors"
+output: html_notebook
+---
+
+This notebook contains examples illustrating how eignevalues and eigenvectors derived from a transformation matrix (denoted $\mathbf{A}$) can be used to illustrate distortion of a unit circle.
+
+# Load `ggplot2` Package
+
+```{r}
+library(ggplot2)
+```
+
+# Unit Circle
+
+Generate a sequence of 200 coordinate pairs, where $(x, y) = (\cos{\theta}, \sin{\theta})$.
+
+```{r}
+# Generate points
+theta <- seq(0, 2 * pi, length.out = 200)
+unit_circle <- cbind(cos(theta), sin(theta))
+
+# Combine into a data frame
+df_unit_circle <-  data.frame(x = unit_circle[ ,1], y = unit_circle[ ,2], type = "Unit Circle")
+```
+
+Let's plot the unit circle using the coordinates we generated above.
+
+```{r}
+ggplot() +
+    geom_path(data = df_unit_circle, aes(x,y), color = "blue") +
+    coord_equal() +
+    theme_minimal() +
+    ggtitle("Unit Circle")
+```
+
+# Create a Distorted Ellipse
+
+We'll provide various transformation matrixes and use their eigenvalues and eigenvectors to visualize distortion to the unit circle. We'll begin with the simplest example (no change), then work our way up to more complex transformations.
+
+## Set Up Function
+
+Before we begin walking through examples, we will set up a function to perform the key steps for each scenario. The `distort` function below will display the transformation matrix, its eigenvalues and eigenvectors, and it will draw the original unit circle and the distorted ellipse.
+
+```{r}
+distort <- function(A) {
+    # Display transformation matrix
+    cat("Transformation Matrix:\n")
+    print(A)
+    cat("\n")
+
+    # Perform spectra decomposition of transformation matrix
+    eig <- eigen(A)
+    
+    # Display eigenvalues and eigenvectors of transformation matrix
+    cat("Eigenvalues and Eigenvectors of A:\n")
+    print(eig)
+    cat("\n")
+    
+    # Calculate values for ellipse
+    ellipse <- t(A %*% t(unit_circle))
+    
+    # Set up data frame for plot
+    df_ellipse <- data.frame(x = ellipse[,1], y = ellipse[,2], type = "Ellipse")
+    
+    # Vectors for plot
+    vecs <- data.frame(
+        x = c(0, 0),
+        y = c(0, 0),
+        xend = eig$vectors[1,] * eig$values,
+        yend = eig$vectors[2,] * eig$values
+    )
+    
+    # Display vector coordinates
+    cat("Plot Vectors:\n")
+    cat("(eigenvector[i, ] * eigenvalues)\n")
+    print(as.matrix(vecs))
+    
+    # Plot
+    ggplot() +
+        geom_path(data = df_unit_circle, aes(x, y), color = "blue") +
+        geom_path(data = df_ellipse, aes(x, y), color = "red") +
+        geom_segment(data = vecs, aes(x = x, y = y, xend = xend, yend = yend),
+            arrow = arrow(length = unit(0.2, "cm")), color = "darkgreen", linewidth = 1) +
+        coord_equal() +
+        theme_minimal() +
+        ggtitle("Blue = Original, Red = Transformed")
+}
+```
+
+
+## Example 1: Identity Matrix
+
+Let's start off easy with a simple identity matrix. We will use the function we defined above in this and all subsequent examples.
+
+```{r}
+matrix_1 <- matrix(
+    c(
+        1, 0,
+        0, 1
+    ), 
+    nrow = 2, 
+    byrow = TRUE
+)
+
+distort(matrix_1)
+```
+
+## Example 2: Distort X-Axis Only
+
+Let's stretch out the x-axis to double its original width and leave the y-axis unchanged.
+
+```{r}
+matrix_2 <- matrix(
+    c(
+        2, 0,
+        0, 1
+    ), 
+    nrow = 2, 
+    byrow = TRUE
+)
+
+distort(matrix_2)
+```
+
+## Example 3: Expand Both X and Y Axes
+
+Now let's triple the width of the x-axis and double the height of the y-axis.
+
+```{r}
+matrix_3 <- matrix(
+    c(
+        3, 0,
+        0, 2
+    ), 
+    nrow = 2, 
+    byrow = TRUE
+)
+
+distort(matrix_3)
+```
+
+## Example 4: Distort and Stretch
+
+Now, let's play with the off-diagonal elements of $\mathbf{A}$ to produce an ellipse that is stretched and rotated.
+
+```{r}
+matrix_4 <- matrix(
+    c(
+        3, 1,
+        1, 2
+    ), 
+    nrow = 2, 
+    byrow = TRUE
+)
+
+distort(matrix_4)
+```
